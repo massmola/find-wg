@@ -5,6 +5,43 @@ boots, restarts it after an unexpected exit, keeps its SQLite deduplication
 state in a named volume, and rotates its container logs. It exposes no network
 port; it only makes outbound HTTPS and IMAPS connections.
 
+## Current deployment
+
+The bot is installed on the existing Venvi Droplet at `/opt/find-apartment`.
+The checkout tracks `main` from `https://github.com/massmola/find-wg.git`, and
+the deployment account is `apartment-deploy`. Venvi's actual Compose directory
+is `/root/venvi`.
+
+Connect from the development machine:
+
+```bash
+ssh -i ~/.ssh/venvi_droplet root@207.154.250.245
+```
+
+On the Droplet, inspect the bot and its update schedule:
+
+```bash
+cd /opt/find-apartment
+docker compose ps
+docker compose logs --tail=50 apartment-bot
+systemctl list-timers 'find-apartment-update*'
+journalctl -u find-apartment-update@apartment-deploy.service -n 50 --no-pager
+```
+
+To release a new version, commit the changes on your development machine and
+push to `origin main`. The enabled timer fetches, tests, and deploys the commit
+on its next check (about five minutes, plus build time). To check immediately:
+
+```bash
+systemctl start find-apartment-update@apartment-deploy.service
+```
+
+The initial deployment preserved the 157 existing SQLite deduplication records.
+Credentials are stored only in the server's mode-600 `.env`; they are not in Git.
+Avoid editing tracked files on the server because the updater rejects a dirty
+checkout. If a later release changes the systemd unit files themselves, reinstall
+those files and run `systemctl daemon-reload` as described below.
+
 ## Sharing the existing Venvi Droplet
 
 Venvi and this bot should remain separate Compose projects on the same server:
@@ -126,6 +163,10 @@ docker compose stop
 docker compose up -d
 ```
 
+When automatic updates are enabled, disable the timer and let any running update
+finish before stopping the bot or restoring its database. Otherwise the next
+update check will start it again. Re-enable the timer after maintenance.
+
 ## Automatic updates from Git
 
 The included systemd timer checks the current branch's configured upstream
@@ -204,17 +245,14 @@ as `restore.sqlite3`, then run:
 ```bash
 docker compose stop apartment-bot
 docker compose run --rm --no-deps \
+  --volume /opt/find-apartment/restore.sqlite3:/restore.sqlite3:ro \
   --entrypoint sh apartment-bot -c \
   'cp /restore.sqlite3 /data/notification-bot.sqlite3'
 docker compose up -d
 ```
 
-For the restore command, temporarily add this read-only bind mount under the
-service's `volumes` list, remove it after the restore, and revalidate Compose:
-
-```yaml
-- ./restore.sqlite3:/restore.sqlite3:ro
-```
+Make the backup readable by the container's non-root user during the restore.
+The one-off mount leaves the tracked Compose configuration unchanged.
 
 ## Troubleshooting
 
