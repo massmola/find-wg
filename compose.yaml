@@ -1,0 +1,38 @@
+name: find-apartment
+
+services:
+  apartment-bot:
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    image: find-apartment-bot:local
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    command:
+      - --state-file
+      - /data/notification-bot.sqlite3
+    volumes:
+      - apartment_bot_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Keep this background worker from starving other services on a shared
+    # Droplet. Increase these only if monitoring shows that it is necessary.
+    cpus: 0.50
+    mem_limit: 256m
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  apartment_bot_data:

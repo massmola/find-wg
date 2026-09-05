@@ -1,0 +1,18 @@
+[Unit]
+Description=Update apartment bot from Git for user %i
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=%i
+SupplementaryGroups=docker
+WorkingDirectory=/opt/find-apartment
+Environment=FIND_APARTMENT_DIR=/opt/find-apartment
+Environment=GIT_TERMINAL_PROMPT=0
+TimeoutStartSec=15min
+ExecStart=/usr/bin/env bash /opt/find-apartment/scripts/update-from-git.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6

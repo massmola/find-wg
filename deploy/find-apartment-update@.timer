@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Git for apartment-bot updates every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

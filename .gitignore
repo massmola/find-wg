@@ -1,0 +1,8 @@
+.env
+.notification-bot.sqlite3
+notification-bot.log
+__pycache__/
+*.pyc
+backups/
+*.sqlite3
+*.sqlite3-*
