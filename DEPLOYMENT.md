@@ -193,16 +193,17 @@ git status --short --branch
 git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'
 ```
 
-Install the timer for the current deployment user:
+Install the timer for the dedicated deployment user (already done on this
+Droplet). Use this instance name even when logged in as root:
 
 ```bash
 sudo cp deploy/find-apartment-update@.service \
   deploy/find-apartment-update@.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now "find-apartment-update@$(whoami).timer"
-sudo systemctl start "find-apartment-update@$(whoami).service"
+sudo systemctl enable --now find-apartment-update@apartment-deploy.timer
+sudo systemctl start find-apartment-update@apartment-deploy.service
 systemctl list-timers 'find-apartment-update*'
-sudo journalctl -u "find-apartment-update@$(whoami).service" -n 100 --no-pager
+sudo journalctl -u find-apartment-update@apartment-deploy.service -n 100 --no-pager
 ```
 
 If the Git repository is private, configure a read-only deploy key for the
@@ -213,7 +214,7 @@ it.
 To disable automatic deployment without stopping the running bot:
 
 ```bash
-sudo systemctl disable --now "find-apartment-update@$(whoami).timer"
+sudo systemctl disable --now find-apartment-update@apartment-deploy.timer
 ```
 
 Updates to `.env` remain manual because that file is ignored by Git. The timer
